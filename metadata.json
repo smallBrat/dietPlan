@@ -1,0 +1,5 @@
+{
+  "name": "MediDiet - Hospital Diet Management",
+  "description": "A secure, hospital-grade diet plan management platform for patients and dieticians. Features diet creation, upload, and WhatsApp automation context.",
+  "requestFramePermissions": []
+}
