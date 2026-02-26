@@ -24,7 +24,17 @@ export const generateDiet = async (req: Request, res: Response, next: NextFuncti
             return next(new AppError('User not authenticated', 401));
         }
 
-        const profile = dietProfileSchema.parse(req.body);
+        const profile = dietProfileSchema.parse(req.body) as {
+            age: number;
+            gender: string;
+            height: string;
+            weight: string;
+            medical_history: string;
+            medications: string;
+            allergies: string;
+            preference: string;
+            goal: string;
+        };
 
         // Validate ObjectId
         if (!mongoose.Types.ObjectId.isValid(userId)) {

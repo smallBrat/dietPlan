@@ -1,5 +1,3 @@
-import { Request } from 'express';
-
 // Define the User Payload Interface
 export interface IUserPayload {
     userId: string;
