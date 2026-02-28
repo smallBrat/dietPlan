@@ -19,9 +19,7 @@ const registerSchema = z.object({
   password: passwordRules,
   phone: z
     .string()
-    .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone format (E.164 required)')
-    .optional()
-    .or(z.literal('')),
+    .regex(/^[0-9]{10}$/, 'Phone number must be exactly 10 digits'),
 });
 
 type RegisterForm = z.infer<typeof registerSchema>;
@@ -50,7 +48,7 @@ export const RegisterPage: React.FC = () => {
       name: data.name.trim(),
       email: data.email.trim().toLowerCase(),
       password: data.password,
-      phone: data.phone?.trim() ? data.phone.trim() : undefined,
+      phone: data.phone.trim(),
     };
 
     try {
@@ -155,16 +153,29 @@ export const RegisterPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1" htmlFor="phone">Phone Number (Optional)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1" htmlFor="phone">Phone Number</label>
             <div className="relative">
               <Phone className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
               <input
                 id="phone"
                 {...register('phone')}
                 type="tel"
+                maxLength={10}
+                inputMode="numeric"
+                pattern="[0-9]{10}"
                 className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
-                placeholder="+91XXXXXXXXXX"
+                placeholder="9876543210"
                 autoComplete="tel"
+                onInput={(e) => {
+                  const input = e.currentTarget;
+                  input.value = input.value.replace(/[^0-9]/g, '');
+                }}
+                onKeyDown={(e) => {
+                  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'];
+                  if (!allowedKeys.includes(e.key) && !/^[0-9]$/.test(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
               />
             </div>
             {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}

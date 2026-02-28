@@ -8,10 +8,7 @@ const registerSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     email: z.string().email('Invalid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
-    phone: z
-        .string()
-        .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone format (E.164 required)')
-        .optional(),
+    phone: z.string().regex(/^[0-9]{10}$/, 'Phone number must be exactly 10 digits'),
 });
 
 const loginSchema = z.object({
@@ -22,7 +19,11 @@ const loginSchema = z.object({
 export const register = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { name, email, password, phone } = registerSchema.parse(req.body);
-        const normalizedPhone = phone && phone.trim().length > 0 ? phone : undefined;
+        
+        // Additional backend validation for phone (defense in depth)
+        if (!/^[0-9]{10}$/.test(phone)) {
+            return next(new AppError('Phone number must be exactly 10 digits', 400));
+        }
 
         // Check if user exists
         const existingUser = await User.findOne({ email });
@@ -30,12 +31,15 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
             return next(new AppError('Email already registered', 409));
         }
 
+        // Format phone: prepend "91" for Indian format
+        const formattedPhone = '91' + phone;
+
         // Create user (password will be hashed by pre-save middleware)
         const user = await User.create({
             name,
             email,
             password,
-            phone: normalizedPhone || null,
+            phone: formattedPhone,
         });
 
         res.status(201).json({
