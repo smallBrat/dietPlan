@@ -107,14 +107,45 @@ export const DietPlanViewer: React.FC = () => {
         setDownloading(true);
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch(`/api/diet/${plan._id}/pdf`, {
+            const apiUrl = `/api/diet/${plan._id}/pdf`;
+            
+            console.log('PDF Download - Starting request:', {
+                planId: plan._id,
+                apiUrl,
+                hasToken: !!token,
+                env: import.meta.env.MODE,
+            });
+            
+            const response = await fetch(apiUrl, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
             });
-            if (!response.ok) throw new Error('Failed to download PDF');
+            
+            console.log('PDF Download - Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                contentType: response.headers.get('content-type'),
+                contentLength: response.headers.get('content-length'),
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('PDF Download - Error response:', errorText);
+                throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+            
             const blob = await response.blob();
+            console.log('PDF Download - Blob received:', {
+                size: blob.size,
+                type: blob.type,
+            });
+            
+            if (blob.size === 0) {
+                throw new Error('Received empty PDF - Server may have encountered an error');
+            }
+            
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -124,9 +155,12 @@ export const DietPlanViewer: React.FC = () => {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+            
+            console.log('PDF Download - Success!');
         } catch (err) {
             console.error('PDF download error:', err);
-            alert('Failed to download PDF. Please try again.');
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            alert(`Failed to download PDF: ${errorMessage}`);
         } finally {
             setDownloading(false);
         }

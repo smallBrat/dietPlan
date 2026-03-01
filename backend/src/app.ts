@@ -39,7 +39,9 @@ app.use(
 // CORS - Allow cross-origin requests
 app.use(
     cors({
-        origin: process.env.NODE_ENV === 'production' ? [process.env.FRONTEND_URL || '*'] : '*',
+        origin: process.env.NODE_ENV === 'production' 
+            ? (process.env.FRONTEND_URL || 'https://dietplan-theta.vercel.app')
+            : '*',
         credentials: true,
         optionsSuccessStatus: 200,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
