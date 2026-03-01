@@ -12,6 +12,8 @@
         "outDir": "./dist",
         "moduleResolution": "node",
         "removeComments": true,
+        "strict": true,
+        "forceConsistentCasingInFileNames": true,
         "noImplicitAny": false,
         "strictNullChecks": false,
         "strictFunctionTypes": true,

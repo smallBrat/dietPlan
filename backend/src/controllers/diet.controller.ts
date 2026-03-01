@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { DietService } from '../services/diet.service';
 import { DietPlan } from '../models/dietPlan.model';
 import { AppError } from '../utils/AppError';
+import { generateDietPDF } from '../utils/pdfGenerator';
 import mongoose from 'mongoose';
 
 const dietProfileSchema = z.object({
@@ -159,5 +160,70 @@ export const getDietById = async (req: Request, res: Response, next: NextFunctio
         });
     } catch (error) {
         next(error);
+    }
+};
+
+export const downloadDietPDF = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id: dietPlanId } = req.params;
+        const userId = req.user?.userId;
+
+        if (!userId) {
+            res.status(401).json({ message: 'User not authenticated' });
+            return;
+        }
+
+        // Validate that dietPlanId is a string
+        if (!dietPlanId || Array.isArray(dietPlanId)) {
+            res.status(400).json({ message: 'Invalid diet plan ID' });
+            return;
+        }
+
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(dietPlanId)) {
+            res.status(400).json({ message: 'Invalid diet plan ID' });
+            return;
+        }
+
+        const dietPlan = await DietPlan.findById(dietPlanId).populate('user', 'name email phone');
+
+        if (!dietPlan) {
+            res.status(404).json({ message: 'Diet plan not found' });
+            return;
+        }
+
+        // Check ownership
+        if (dietPlan.user._id.toString() !== userId) {
+            res.status(403).json({ message: 'You do not have permission to access this diet plan' });
+            return;
+        }
+
+        // Ensure planData has required fields
+        const planData = dietPlan.planData as any;
+        if (!planData || !planData.weekly_plan) {
+            res.status(400).json({ message: 'Diet plan data is incomplete' });
+            return;
+        }
+
+        // Generate PDF with user info
+        const user = dietPlan.user as any;
+        const pdfData = {
+            name: user.name,
+            calories_per_day: planData.calories_per_day || 2000,
+            veg_or_nonveg: planData.veg_or_nonveg || 'Mixed',
+            weekly_plan: planData.weekly_plan,
+            precautions: planData.precautions || [],
+            disclaimer: planData.disclaimer || 'Consult your healthcare provider before starting any diet plan.',
+        };
+
+        // Generate PDF - streams directly to response
+        // Generate PDF - streams directly to response
+        generateDietPDF(pdfData, res);
+    } catch (error) {
+        console.error('PDF download error:', error);
+        // Only send JSON error if headers haven't been sent yet
+        if (!res.headersSent) {
+            res.status(500).json({ message: 'Failed to generate PDF' });
+        }
     }
 };

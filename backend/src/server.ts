@@ -26,6 +26,7 @@ const startServer = async () => {
             console.log(`   POST   /api/diet/generate      - Generate diet plan (protected)`);
             console.log(`   GET    /api/diet/latest        - Get latest diet plan (protected)`);
             console.log(`   GET    /api/diet/:id           - Get diet plan by ID (protected)`);
+            console.log(`   GET    /api/diet/:id/pdf       - Download diet plan as PDF (protected)`);
             console.log(`   POST   /api/whatsapp/query     - WhatsApp query handler`);
             console.log('');
         });

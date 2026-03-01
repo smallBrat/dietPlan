@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getLatestDietPlan } from '../services/api';
-import { Clock, Info, Download, ChefHat, Coffee, Sun, Moon, AlertCircle } from 'lucide-react';
+import { Clock, Info, Download, ChefHat, Coffee, Sun, Moon, AlertCircle, Loader2 } from 'lucide-react';
 
 type WeeklyPlanDay = {
     breakfast: string[];
@@ -57,6 +57,7 @@ export const DietPlanViewer: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeDay, setActiveDay] = useState(1);
+    const [downloading, setDownloading] = useState(false);
 
     const isWeekly = isWeeklyPlan(plan) && plan?.planVersion === 2;
     const weeklyPlanData = isWeekly ? plan!.planData : null;
@@ -100,6 +101,36 @@ export const DietPlanViewer: React.FC = () => {
     useEffect(() => {
         fetchPlan();
     }, []);
+
+    const handleDownloadPDF = async () => {
+        if (!plan?._id) return;
+        setDownloading(true);
+        try {
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch(`/api/diet/${plan._id}/pdf`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            if (!response.ok) throw new Error('Failed to download PDF');
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const userName = (plan.userInput?.name || 'DietPlan').replace(/\s+/g, '_');
+            link.download = `DietPlan_${userName}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('PDF download error:', err);
+            alert('Failed to download PDF. Please try again.');
+        } finally {
+            setDownloading(false);
+        }
+    };
 
     useEffect(() => {
         if (orderedDays.length === 0) {
@@ -170,8 +201,17 @@ export const DietPlanViewer: React.FC = () => {
                             </span>
                         </div>
                     </div>
-                    <button className="btn-secondary flex items-center gap-2">
-                        <Download className="h-4 w-4" /> Download PDF
+                    <button
+                        onClick={handleDownloadPDF}
+                        disabled={downloading}
+                        className="btn-secondary flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {downloading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Download className="h-4 w-4" />
+                        )}
+                        {downloading ? 'Generating...' : 'Download PDF'}
                     </button>
                 </div>
 
